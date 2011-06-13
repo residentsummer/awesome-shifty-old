@@ -1,6 +1,7 @@
 --- Shifty: Dynamic tagging library for awesome3-git
--- @author koniu &lt;gkusnierz@gmail.com&gt;
--- @author bioe007 &lt;perry.hargrave@gmail.com&gt;
+-- @author koniu gkusnierz at gmail dot com
+-- @author bioe007 perry.hargrave at gmail dot com
+-- @contributor Anton S residentsummer at gmail dot com
 --
 -- http://awesome.naquadah.org/wiki/index.php?title=Shifty
 
@@ -22,7 +23,7 @@ local io = io
 local tonumber = tonumber
 local wibox = wibox
 local root = root
-local dbg= dbg
+local dbg = dbg
 local timer = timer
 
 module("shifty")
@@ -42,6 +43,7 @@ config.globalkeys = nil
 config.layouts = {}
 config.prompt_sources = { "config_tags", "config_apps", "existing", "history" }
 config.prompt_matchers = { "^", ":", "" }
+config.taglist = nil
 
 local matchp = ""
 local index_cache = {}
@@ -90,23 +92,19 @@ function rename(tag, prefix, no_selectall)
   local theme = beautiful.get()
   local t = tag or awful.tag.selected(mouse.screen)
   local scr = t.screen
-  local bg = nil
-  local fg = nil
+  local bg = theme.bg_focus or nil
+  local fg = theme.fg_urgent or nil
   local text = prefix or t.name
   local before = t.name
 
-  if t == awful.tag.selected(scr) then 
-    bg = theme.bg_focus or '#535d6c'
-    fg = theme.fg_urgent or '#ffffff'
-  else 
-    bg = theme.bg_normal or '#222222'
-    fg = theme.fg_urgent or '#ffffff'
+  if not t == awful.tag.selected(scr) and theme.bg_focus then
+    bg = theme.bg_normal
   end
 
-  awful.prompt.run( { 
-    fg_cursor = fg, bg_cursor = bg, ul_cursor = "single",
+  awful.prompt.run( {
+    fg_cursor = fg, bg_cursor = bg, ul_cursor = "none",
     text = text, selectall = not no_selectall },
-    taglist[scr][tag2index(scr,t)][1],
+    config.taglist[scr].widgets[tag2index(scr,t)].widget.widgets[2].widget,
     function (name) if name:len() > 0 then t.name = name; end end, 
     completion,
     awful.util.getdir("cache") .. "/history_tags", nil,
@@ -342,7 +340,7 @@ function add(args)
       f = function() rename(t); tmr:stop() end
     end
     tmr = timer({ timeout = 0.01 })
-    tmr:add_signal("timeout", f)
+    tmr:connect_signal("timeout", f)
     tmr:start()
   end
 
@@ -575,7 +573,7 @@ function sweep()
             if delay then
               local f = function() del(t); tmr:stop() end
               tmr = timer({ timeout = delay })
-              tmr:add_signal("timeout", f)
+              tmr:connect_signal("timeout", f)
               tmr:start()
             else
               del(t)
@@ -761,8 +759,12 @@ end
 -- {{{ tagkeys : hook function that sets keybindings per tag
 function tagkeys(s)
   local sel = awful.tag.selected(s.index)
-  local keys = awful.tag.getproperty(sel, "keys") or config.globalkeys
-  if keys and sel.selected then root.keys(keys) end
+  if sel and sel.selected then
+    local keys = awful.tag.getproperty(sel, "keys") or config.globalkeys
+    if keys then
+      root.keys(keys)
+    end
+  end
 end
 -- }}}
 
@@ -790,15 +792,21 @@ end
 -- }}}
 
 -- {{{ signals
-client.add_signal("manage", match)
-client.add_signal("unmanage", sweep)
-client.remove_signal("manage", awful.tag.withcurrent)
+tag.add_signal("property::used")
+tag.add_signal("property::visited")
+tag.add_signal("property::matched")
+tag.add_signal("property::initial")
+tag.add_signal("property::position")
+
+client.connect_signal("manage", match)
+client.connect_signal("unmanage", sweep)
+client.disconnect_signal("manage", awful.tag.withcurrent)
 
 for s = 1, screen.count() do
-  awful.tag.attached_add_signal(s, "property::selected", sweep)
-  awful.tag.attached_add_signal(s, "tagged", sweep)
-  screen[s]:add_signal("tag::history::update", tagkeys)
+  awful.tag.attached_connect_signal(s, "property::selected", sweep)
+  awful.tag.attached_connect_signal(s, "tagged", sweep)
+  screen[s]:connect_signal("tag::history::update", tagkeys)
 end
 -- }}}
 
--- vim: foldmethod=marker:filetype=lua:expandtab:shiftwidth=2:tabstop=2:softtabstop=2:encoding=utf-8:textwidth=80
+-- vim: foldmethod=marker:filetype=lua:expandtab:shiftwidth=2:tabstop=2:softtabstop=2:fileencoding=utf-8:textwidth=80
