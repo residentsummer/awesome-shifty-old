@@ -11,6 +11,7 @@ local tag = tag
 local ipairs = ipairs
 local table = table
 local client = client
+local awesome = awesome
 local image = image
 local string = string
 local screen = screen
@@ -149,7 +150,7 @@ function pos2idx(pos, scr)
       local t = screen[scr]:tags()[i]
       if awful.tag.getproperty(t,"position") and awful.tag.getproperty(t,"position") <= pos then
         v = i + 1
-        break 
+        break
       end
     end
   end
@@ -791,6 +792,14 @@ function getlayout(name)
 end
 -- }}}
 
+-- {{{ clear_tags: untags all clients
+function clear_tags()
+  for i, c in ipairs(client.get()) do
+    c:tags({})
+  end
+end
+-- }}}
+
 -- {{{ signals
 tag.add_signal("property::used")
 tag.add_signal("property::visited")
@@ -801,6 +810,7 @@ tag.add_signal("property::position")
 client.connect_signal("manage", match)
 client.connect_signal("unmanage", sweep)
 client.disconnect_signal("manage", awful.tag.withcurrent)
+awesome.connect_signal("exit", clear_tags)
 
 for s = 1, screen.count() do
   awful.tag.attached_connect_signal(s, "property::selected", sweep)
