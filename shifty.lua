@@ -801,11 +801,15 @@ end
 -- }}}
 
 -- {{{ signals
+tag.add_signal("property::initial")
 tag.add_signal("property::used")
 tag.add_signal("property::visited")
 tag.add_signal("property::matched")
-tag.add_signal("property::initial")
+tag.add_signal("property::selected")
 tag.add_signal("property::position")
+tag.add_signal("property::deserted")
+tag.add_signal("property::exclusive")
+tag.add_signal("property::persist")
 
 client.connect_signal("manage", match)
 client.connect_signal("unmanage", sweep)
