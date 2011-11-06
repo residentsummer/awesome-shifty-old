@@ -37,6 +37,7 @@ config.defaults = {}
 config.guess_name = true
 config.guess_position = true
 config.remember_index = true
+config.no_offscreen = true
 config.default_name = "new"
 config.clientkeys = {}
 config.globalkeys = nil
@@ -523,15 +524,6 @@ function match(c, startup)
     end
   end
 
-  -- set key bindings
-  c:keys(keys)
-
-  -- set properties of floating clients
-  if awful.client.floating.get(c) then
-    awful.placement.centered(c, c.transient_for)
-    awful.placement.no_offscreen(c) -- this always seems to stick the client at 0, 0 (incl titlebar)
-  end
-
   -- if not matched to some names try putting client in c.transient_for or current tags
   local sel = awful.tag.selectedlist(target_screen)
   if not target_tag_names or #target_tag_names == 0 then
@@ -578,15 +570,24 @@ function match(c, startup)
     end
   end
 
-  -- set client's screen/tag if needed
-  target_screen = target_tags[1].screen or target_screen
-  if c.screen ~= target_screen then c.screen = target_screen end
-  if slave then awful.client.setslave(c) end
-  c:tags( target_tags )
-  if wfact then awful.client.setwfact(wfact, c) end
+  -- set client's params before assigning tags
   if float ~= nil then awful.client.floating.set(c, float) end
+  if slave then awful.client.setslave(c) end
+  if wfact then awful.client.setwfact(wfact, c) end
   if geom then c:geometry(geom) end
   if struts then c:struts(struts) end
+  -- set client's screen/tag
+  target_screen = target_tags[1].screen or target_screen
+  if c.screen ~= target_screen then c.screen = target_screen end
+  c:tags( target_tags )
+
+  -- set key bindings
+  c:keys(keys)
+
+  -- set properties of floating clients
+  if config.no_offscreen and awful.client.floating.get(c) then
+    awful.placement.no_offscreen(c) -- this always seems to stick the client at 0, 0 (incl titlebar)
+  end
 
   -- switch or highlight
   local showtags = {}
