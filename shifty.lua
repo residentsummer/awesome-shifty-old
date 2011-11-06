@@ -489,7 +489,7 @@ function match(c, startup)
             end
           end
           if a.startup and startup then a = awful.util.table.join(a, a.startup) end
-          if a.geometry ~=nil then geom = { x = a.geometry[1], y = a.geometry[2], width = a.geometry[3], height = a.geometry[4] } end
+          if a.geometry ~=nil then geom = a.geometry end
           if a.float ~= nil then float = a.float end
           if a.slave ~=nil then slave = a.slave end
           if a.border_width ~= nil then c.border_width = a.border_width end
