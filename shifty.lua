@@ -524,17 +524,21 @@ function match(c, startup)
     end
   end
 
+  -- if intrusive - select all tags on screen
+  if intrusive then
+    target_tags = screen[target_screen]:tags()
+  end
+
   -- if not matched to some names try putting client in c.transient_for or current tags
   local sel = awful.tag.selectedlist(target_screen)
-  if not target_tag_names or #target_tag_names == 0 then
+  if #target_tag_names == 0 and #target_tags == 0 then
     if c.transient_for then
       target_tags = c.transient_for:tags()
     elseif #sel > 0 then
       for i, t in ipairs(sel) do
         local mc = awful.tag.getproperty(t, "max_clients")
         if not (awful.tag.getproperty(t, "exclusive") or
-           (mc and mc >= #t:clients())) or
-           intrusive then
+           (mc and mc >= #t:clients())) then
           table.insert(target_tags, t)
         end
       end
@@ -542,8 +546,7 @@ function match(c, startup)
   end
 
   -- if we still don't know any target names/tags guess name from class or use default
-  if (not target_tag_names or #target_tag_names == 0) and
-     (not target_tags or #target_tags == 0) then
+  if #target_tag_names == 0 and #target_tags == 0 then
     if config.guess_name and cls then
       target_tag_names = { cls:lower() }
     else
@@ -558,7 +561,7 @@ function match(c, startup)
       for j, t in ipairs(name2tags(tn, target_screen) or
                          name2tags(tn) or {}) do
         local mc = awful.tag.getproperty(t, "max_clients")
-        if not (mc and (#t:clients() >= mc)) or intrusive then
+        if not (mc and (#t:clients() >= mc)) then
           table.insert(res, t)
         end
       end
@@ -592,7 +595,7 @@ function match(c, startup)
   -- switch or highlight
   local showtags = {}
   local u = nil
-  if #target_tags > 0 and not startup then
+  if not intrusive and not startup and #target_tags > 0 then
     for i, t in ipairs(target_tags) do
       if not (awful.tag.getproperty(t, "nopopup") or nopopup) then
         table.insert(showtags, t)
