@@ -590,6 +590,9 @@ function match(c, startup)
   -- set properties of floating clients
   if config.no_offscreen and awful.client.floating.get(c) then
     awful.placement.no_offscreen(c) -- this always seems to stick the client at 0, 0 (incl titlebar)
+    if not geom then
+      awful.placement.centered(c, c.transient_for)
+    end
   end
 
   -- switch or highlight
